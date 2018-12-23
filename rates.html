@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Rates</title>
+    <style type="text/css">
+        td.online {
+            color: green;
+        }
+    </style>
+    <script type="text/javascript">
+        let defaults = {
+            bankRate: onlineBankRate(),
+            cardRateForeign: 1000000,
+            cardRateBase: 30629.40,
+            cashRate: 32.50,
+            cashFee: 0.24,
+        };
+
+        window.onload = () => {
+            for (let id in defaults) {
+                Promise.resolve(defaults[id]).then(value => element(id).value = value);
+            }
+
+            element('calculate').onclick = () => {
+                element('calculatedRate').innerHTML = (1 - element('cashFee').value / 100) *
+                    element('cashRate').value *
+                    element('bankRate').value *
+                    element('cardRateBase').value / element('cardRateForeign').value;
+            }
+        };
+
+        function onlineBankRate() {
+            return ajax('https://api.privatbank.ua/p24api/pubinfo?exchange&json&coursid=11')
+                .then(rates => JSON.parse(rates))
+                .then(rates => rates.find(rate => rate.ccy === 'USD').sale);
+        }
+
+        function ajax(url) {
+            return new Promise(resolve => {
+                const req = new XMLHttpRequest();
+                req.onreadystatechange = function () {
+                    this.readyState === 4 && this.status === 200 && resolve(this.responseText);
+                };
+                req.open('GET', url, true);
+                req.send();
+            });
+        }
+
+        function element(id) {
+            return document.getElementById(id);
+        }
+    </script>
+</head>
+<body>
+<table>
+    <tr>
+        <td class="online">Bank rate (USD/UAH)</td>
+        <td><input id="bankRate" type="text"></td>
+        <td><a href="https://www.privat24.ua" target="_blank">privatbank</a></td>
+    </tr>
+    <tr>
+        <td>Card rate (THB/USD)</td>
+        <td>
+            <input id="cardRateForeign" type="text">
+            <br/>
+            <input id="cardRateBase" type="text"></td>
+        <td><a href="https://www.mastercard.us/en-us/consumers/get-support/convert-currency.html" target="_blank">mastercard</a></td>
+    </tr>
+    <tr>
+        <td>Cash rate (USD/THB)</td>
+        <td><input id="cashRate" type="text"></td>
+        <td><a href="https://www.superrichthailand.com" target="_blank">superrichthailand</a></td>
+    </tr>
+    <tr>
+        <td>Cash fee (%)</td>
+        <td><input id="cashFee" type="text"></td>
+        <td>&nbsp;</td>
+    </tr>
+    <tr>
+        <td>
+            <button id="calculate">Calculate</button>
+        </td>
+        <td><span id="calculatedRate"></span></td>
+        <td>You buy USD as (low value => pay card instead of cash)</td>
+    </tr>
+</table>
+</body>
+</html>
